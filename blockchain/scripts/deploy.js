@@ -18,10 +18,10 @@ async function main() {
   const didRegistryAddress = await didRegistry.getAddress();
   console.log("✅ DIDRegistry deployed to:", didRegistryAddress);
 
-  // Deploy CredentialIssuer
+  // Deploy CredentialIssuer (requires DIDRegistry address for DID validation)
   console.log("\n📜 Deploying CredentialIssuer...");
   const CredentialIssuer = await hre.ethers.getContractFactory("CredentialIssuer");
-  const credentialIssuer = await CredentialIssuer.deploy();
+  const credentialIssuer = await CredentialIssuer.deploy(didRegistryAddress);
   await credentialIssuer.waitForDeployment();
   const credentialIssuerAddress = await credentialIssuer.getAddress();
   console.log("✅ CredentialIssuer deployed to:", credentialIssuerAddress);
