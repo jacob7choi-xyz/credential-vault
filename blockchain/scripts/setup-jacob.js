@@ -21,7 +21,6 @@ async function main() {
   const jacobDID = `did:eth:${jacob.address.slice(0, 10)}`;
   const tx1 = await didRegistry.connect(jacob).createDID(
     jacobDID,
-    `pk-${jacob.address.slice(0, 10)}`,
     "https://jacob-portfolio.com"
   );
   await tx1.wait();
