@@ -43,9 +43,9 @@ credential_vault_v1/
       CredentialIssuer.sol     # Credential issuance
       CredentialVerifier.sol   # Verification workflow
     test/
-      DIDRegistry.test.js      # 162 tests
-      CredentialIssuer.test.js  # 55 tests
-      CredentialVerifier.test.js # 26 tests
+      DIDRegistry.test.js      # 139 tests
+      CredentialIssuer.test.js  # 60 tests
+      CredentialVerifier.test.js # 56 tests
       FullWorkflow.test.js     # 5 integration tests
     scripts/
       deploy.js                # Deployment + artifact generation
@@ -60,7 +60,7 @@ credential_vault_v1/
       contracts.json           # Auto-generated contract addresses + ABIs
   docs/
     adr/001-architecture-decisions.md
-  CLAUDE.md
+  LICENSE
   README.md
 ```
 
@@ -91,7 +91,7 @@ cd blockchain
 npx hardhat test
 ```
 
-248 tests covering all three contracts, access control, edge cases, cross-contract interactions, and 12 security bug fix regressions.
+260 tests covering all three contracts, access control, edge cases, cross-contract interactions, and security bug fix regressions.
 
 ## The Credential Flow
 
