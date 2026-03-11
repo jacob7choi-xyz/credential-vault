@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 
 async function main() {
-  console.log("\n🔄 Updating Jacob's Credential with correct date...\n");
+  console.log("\nUpdating Jacob's Credential with correct date...\n");
 
   // Get signers
   const [deployer, jacob, colbyCollege] = await hre.ethers.getSigners();
@@ -10,13 +10,13 @@ async function main() {
   const deployment = require("../deployments/localhost.json");
   const credentialIssuer = await hre.ethers.getContractAt("CredentialIssuer", deployment.contracts.CredentialIssuer.address);
 
-  console.log("🗑️  Step 1: Revoking old credential...");
+  console.log("Step 1: Revoking old credential...");
   const oldCredentialId = "colby-student-jacob-2024";
   const tx1 = await credentialIssuer.connect(colbyCollege).revokeCredential(oldCredentialId);
   await tx1.wait();
-  console.log("✅ Old credential revoked");
+  console.log("Old credential revoked");
 
-  console.log("\n📜 Step 2: Issuing corrected credential...");
+  console.log("\nStep 2: Issuing corrected credential...");
   const jacobDID = `did:eth:${jacob.address.slice(0, 10)}`;
   const newCredentialId = "colby-student-jacob-2024-v2";
   const credentialData = JSON.stringify({
@@ -36,14 +36,14 @@ async function main() {
     0 // Never expires
   );
   await tx2.wait();
-  console.log("✅ New credential issued with correct enrollment date!");
+  console.log("New credential issued with correct enrollment date!");
 
-  console.log("\n✨ Updated Credential:");
+  console.log("\nUpdated Credential:");
   console.log("=".repeat(60));
   console.log("Credential ID:", newCredentialId);
-  console.log("Enrollment Date: August 2022 ✓");
+  console.log("Enrollment Date: August 2022");
   console.log("=".repeat(60));
-  console.log("\n🎉 Your credential is now correct on-chain!");
+  console.log("\nYour credential is now correct on-chain!");
 }
 
 main()
