@@ -3,36 +3,36 @@ const fs = require("fs");
 const path = require("path");
 
 async function main() {
-  console.log("\n🚀 Starting deployment to local network...\n");
+  console.log("\nStarting deployment to local network...\n");
 
   // Get deployer account
   const [deployer] = await hre.ethers.getSigners();
-  console.log("📝 Deploying contracts with account:", deployer.address);
-  console.log("💰 Account balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH\n");
+  console.log("Deploying contracts with account:", deployer.address);
+  console.log("Account balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH\n");
 
   // Deploy DIDRegistry
-  console.log("📜 Deploying DIDRegistry...");
+  console.log("Deploying DIDRegistry...");
   const DIDRegistry = await hre.ethers.getContractFactory("DIDRegistry");
   const didRegistry = await DIDRegistry.deploy();
   await didRegistry.waitForDeployment();
   const didRegistryAddress = await didRegistry.getAddress();
-  console.log("✅ DIDRegistry deployed to:", didRegistryAddress);
+  console.log("DIDRegistry deployed to:", didRegistryAddress);
 
   // Deploy CredentialIssuer (requires DIDRegistry address for DID validation)
-  console.log("\n📜 Deploying CredentialIssuer...");
+  console.log("\nDeploying CredentialIssuer...");
   const CredentialIssuer = await hre.ethers.getContractFactory("CredentialIssuer");
   const credentialIssuer = await CredentialIssuer.deploy(didRegistryAddress);
   await credentialIssuer.waitForDeployment();
   const credentialIssuerAddress = await credentialIssuer.getAddress();
-  console.log("✅ CredentialIssuer deployed to:", credentialIssuerAddress);
+  console.log("CredentialIssuer deployed to:", credentialIssuerAddress);
 
   // Deploy CredentialVerifier
-  console.log("\n📜 Deploying CredentialVerifier...");
+  console.log("\nDeploying CredentialVerifier...");
   const CredentialVerifier = await hre.ethers.getContractFactory("CredentialVerifier");
   const credentialVerifier = await CredentialVerifier.deploy(didRegistryAddress, credentialIssuerAddress);
   await credentialVerifier.waitForDeployment();
   const credentialVerifierAddress = await credentialVerifier.getAddress();
-  console.log("✅ CredentialVerifier deployed to:", credentialVerifierAddress);
+  console.log("CredentialVerifier deployed to:", credentialVerifierAddress);
 
   // Prepare deployment info
   const deploymentInfo = {
@@ -64,7 +64,7 @@ async function main() {
 
   const deploymentFile = path.join(deploymentsDir, `${hre.network.name}.json`);
   fs.writeFileSync(deploymentFile, JSON.stringify(deploymentInfo, null, 2));
-  console.log("\n💾 Deployment info saved to:", deploymentFile);
+  console.log("\nDeployment info saved to:", deploymentFile);
 
   // Copy ABIs to a convenient location
   const abisDir = path.join(__dirname, "../deployments/abis");
@@ -79,7 +79,7 @@ async function main() {
     const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
     const abiPath = path.join(abisDir, `${contractName}.json`);
     fs.writeFileSync(abiPath, JSON.stringify(artifact.abi, null, 2));
-    console.log(`📋 ${contractName} ABI saved to: deployments/abis/${contractName}.json`);
+    console.log(`${contractName} ABI saved to: deployments/abis/${contractName}.json`);
   }
 
   // Create a frontend-ready config file
@@ -103,16 +103,16 @@ async function main() {
 
   const frontendConfigPath = path.join(deploymentsDir, "frontend-config.json");
   fs.writeFileSync(frontendConfigPath, JSON.stringify(frontendConfig, null, 2));
-  console.log(`\n🎨 Frontend config saved to: deployments/frontend-config.json`);
+  console.log(`\nFrontend config saved to: deployments/frontend-config.json`);
 
-  console.log("\n✨ Deployment Summary:");
+  console.log("\nDeployment Summary:");
   console.log("=".repeat(60));
   console.log(`Network: ${hre.network.name} (Chain ID: ${hre.network.config.chainId})`);
   console.log(`DIDRegistry:         ${didRegistryAddress}`);
   console.log(`CredentialIssuer:    ${credentialIssuerAddress}`);
   console.log(`CredentialVerifier:  ${credentialVerifierAddress}`);
   console.log("=".repeat(60));
-  console.log("\n🎉 All contracts deployed successfully!\n");
+  console.log("\nAll contracts deployed successfully!\n");
 }
 
 main()
