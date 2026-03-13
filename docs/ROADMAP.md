@@ -10,7 +10,7 @@ What's built, what's next, and what's on the horizon.
 - DIDRegistry v2: multi-key, key rotation history, reverse lookup, nonces, guardian recovery
 - Consent-gated verification workflow (Request, Approval, Verification)
 - Two-step admin transfer for issuer management
-- 248 tests with 12 security bug fix regressions
+- 260 tests with 13 security bug fix regressions
 - Next.js 15 frontend with Web3 wallet integration
 - Local development environment with automated deployment
 
