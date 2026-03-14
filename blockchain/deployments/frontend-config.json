@@ -1,8 +1,39 @@
 {
   "contracts": {
     "DIDRegistry": {
-      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
       "abi": [
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "oldController",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newController",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "DIDControllerTransferred",
+          "type": "event"
+        },
         {
           "anonymous": false,
           "inputs": [
@@ -29,6 +60,394 @@
           "type": "event"
         },
         {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "controller",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "DIDDeactivated",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "controller",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "DIDUpdated",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "guardian",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "GuardianAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "guardian",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "GuardianRemoved",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "newThreshold",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "GuardianThresholdUpdated",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "keyAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "enum DIDRegistry.KeyType",
+              "name": "keyType",
+              "type": "uint8"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "KeyAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "keyAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "enum DIDRegistry.KeyType",
+              "name": "keyType",
+              "type": "uint8"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "KeyRevoked",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "newNonce",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "NonceIncremented",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "guardian",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "approvalCount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "RecoveryApproved",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "cancelledBy",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "RecoveryCancelled",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "oldController",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newController",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "RecoveryExecuted",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newController",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "initiator",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "executeAfter",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "RecoveryInitiated",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "MAX_GUARDIANS",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "MAX_KEYS",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "MIN_GUARDIANS",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "RECOVERY_TIMELOCK",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
           "inputs": [
             {
               "internalType": "string",
@@ -36,8 +455,70 @@
               "type": "string"
             },
             {
+              "internalType": "address",
+              "name": "guardian",
+              "type": "address"
+            }
+          ],
+          "name": "addGuardian",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
               "internalType": "string",
-              "name": "publicKey",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "keyAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "enum DIDRegistry.KeyType",
+              "name": "keyType",
+              "type": "uint8"
+            }
+          ],
+          "name": "addKey",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            }
+          ],
+          "name": "approveRecovery",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            }
+          ],
+          "name": "cancelRecovery",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
               "type": "string"
             },
             {
@@ -55,44 +536,13 @@
           "inputs": [
             {
               "internalType": "string",
-              "name": "",
+              "name": "didId",
               "type": "string"
             }
           ],
-          "name": "didDocuments",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "controller",
-              "type": "address"
-            },
-            {
-              "internalType": "string",
-              "name": "publicKey",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "serviceEndpoint",
-              "type": "string"
-            },
-            {
-              "internalType": "uint256",
-              "name": "created",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "updated",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "active",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
+          "name": "deactivateDID",
+          "outputs": [],
+          "stateMutability": "nonpayable",
           "type": "function"
         },
         {
@@ -122,6 +572,70 @@
               "type": "string"
             }
           ],
+          "name": "executeRecovery",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "enum DIDRegistry.KeyType",
+              "name": "keyType",
+              "type": "uint8"
+            }
+          ],
+          "name": "getActiveKeysByType",
+          "outputs": [
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "keyAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "enum DIDRegistry.KeyType",
+                  "name": "keyType",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "addedAt",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "revokedAt",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct DIDRegistry.DIDKey[]",
+              "name": "",
+              "type": "tuple[]"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            }
+          ],
           "name": "getDIDDocument",
           "outputs": [
             {
@@ -130,11 +644,6 @@
                   "internalType": "address",
                   "name": "controller",
                   "type": "address"
-                },
-                {
-                  "internalType": "string",
-                  "name": "publicKey",
-                  "type": "string"
                 },
                 {
                   "internalType": "string",
@@ -171,6 +680,399 @@
               "internalType": "string",
               "name": "didId",
               "type": "string"
+            }
+          ],
+          "name": "getGuardians",
+          "outputs": [
+            {
+              "internalType": "address[]",
+              "name": "guardians",
+              "type": "address[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "threshold",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            }
+          ],
+          "name": "getKeys",
+          "outputs": [
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "keyAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "enum DIDRegistry.KeyType",
+                  "name": "keyType",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "active",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "addedAt",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "revokedAt",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct DIDRegistry.DIDKey[]",
+              "name": "",
+              "type": "tuple[]"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            }
+          ],
+          "name": "getRecoveryRequest",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "newController",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "initiatedAt",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "executeAfter",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum DIDRegistry.RecoveryStatus",
+              "name": "status",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "approvalCount",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "keyAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "enum DIDRegistry.KeyType",
+              "name": "keyType",
+              "type": "uint8"
+            }
+          ],
+          "name": "hasActiveKey",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "guardian",
+              "type": "address"
+            }
+          ],
+          "name": "hasGuardianApproved",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            }
+          ],
+          "name": "incrementNonce",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "newController",
+              "type": "address"
+            }
+          ],
+          "name": "initiateRecovery",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            }
+          ],
+          "name": "isDIDActive",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "addr",
+              "type": "address"
+            }
+          ],
+          "name": "isGuardian",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "name": "nonces",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "guardian",
+              "type": "address"
+            }
+          ],
+          "name": "removeGuardian",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "addr",
+              "type": "address"
+            }
+          ],
+          "name": "resolveDID",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "keyAddress",
+              "type": "address"
+            }
+          ],
+          "name": "revokeKey",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address[]",
+              "name": "guardians",
+              "type": "address[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "threshold",
+              "type": "uint256"
+            }
+          ],
+          "name": "setupGuardians",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "newController",
+              "type": "address"
+            }
+          ],
+          "name": "transferController",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "newThreshold",
+              "type": "uint256"
+            }
+          ],
+          "name": "updateGuardianThreshold",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "serviceEndpoint",
+              "type": "string"
+            }
+          ],
+          "name": "updateServiceEndpoint",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
             },
             {
               "internalType": "address",
@@ -188,16 +1090,101 @@
           ],
           "stateMutability": "view",
           "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "didId",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "keyAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "wasKeyValidAt",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
         }
       ]
     },
     "CredentialIssuer": {
-      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
       "abi": [
         {
-          "inputs": [],
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_didRegistry",
+              "type": "address"
+            }
+          ],
           "stateMutability": "nonpayable",
           "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "currentAdmin",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "pendingAdmin",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "AdminTransferRequested",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousAdmin",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newAdmin",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "AdminTransferred",
+          "type": "event"
         },
         {
           "anonymous": false,
@@ -272,6 +1259,25 @@
             },
             {
               "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "IssuerDeauthorized",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "issuerAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
               "internalType": "string",
               "name": "institutionName",
               "type": "string"
@@ -285,6 +1291,13 @@
           ],
           "name": "IssuerRegistered",
           "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "acceptAdmin",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
         },
         {
           "inputs": [],
@@ -370,13 +1383,34 @@
             },
             {
               "internalType": "bool",
-              "name": "isValid",
-              "type": "bool"
-            },
-            {
-              "internalType": "bool",
               "name": "isRevoked",
               "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "issuerAddress",
+              "type": "address"
+            }
+          ],
+          "name": "deauthorizeIssuer",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "didRegistry",
+          "outputs": [
+            {
+              "internalType": "contract DIDRegistry",
+              "name": "",
+              "type": "address"
             }
           ],
           "stateMutability": "view",
@@ -433,11 +1467,6 @@
                   "internalType": "uint256",
                   "name": "expirationDate",
                   "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isValid",
-                  "type": "bool"
                 },
                 {
                   "internalType": "bool",
@@ -549,6 +1578,19 @@
           "type": "function"
         },
         {
+          "inputs": [],
+          "name": "pendingAdmin",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
           "inputs": [
             {
               "internalType": "address",
@@ -601,6 +1643,19 @@
         {
           "inputs": [
             {
+              "internalType": "address",
+              "name": "newAdmin",
+              "type": "address"
+            }
+          ],
+          "name": "transferAdmin",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
               "internalType": "string",
               "name": "credentialId",
               "type": "string"
@@ -610,22 +1665,27 @@
           "outputs": [
             {
               "internalType": "bool",
-              "name": "",
+              "name": "exists",
               "type": "bool"
             },
             {
               "internalType": "bool",
-              "name": "",
+              "name": "valid",
               "type": "bool"
             },
             {
               "internalType": "string",
-              "name": "",
+              "name": "institutionName",
               "type": "string"
             },
             {
               "internalType": "string",
-              "name": "",
+              "name": "holderDID",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "credentialType",
               "type": "string"
             }
           ],
@@ -635,7 +1695,7 @@
       ]
     },
     "CredentialVerifier": {
-      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
       "abi": [
         {
           "inputs": [
@@ -726,6 +1786,37 @@
             },
             {
               "indexed": false,
+              "internalType": "uint256",
+              "name": "credentialCount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "VerificationCompleted",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "string",
+              "name": "requestId",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "employer",
+              "type": "address"
+            },
+            {
+              "indexed": false,
               "internalType": "string",
               "name": "candidateDID",
               "type": "string"
@@ -739,6 +1830,45 @@
           ],
           "name": "VerificationRequested",
           "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "MAX_CREDENTIALS_PER_REQUEST",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "MAX_VALID_HOURS",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "MIN_VALID_HOURS",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
         },
         {
           "inputs": [
