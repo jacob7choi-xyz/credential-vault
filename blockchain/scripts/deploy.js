@@ -105,6 +105,14 @@ async function main() {
   fs.writeFileSync(frontendConfigPath, JSON.stringify(frontendConfig, null, 2));
   console.log(`\nFrontend config saved to: deployments/frontend-config.json`);
 
+  // Copy to frontend config directory
+  const frontendDir = path.join(__dirname, "../../frontend/config");
+  if (fs.existsSync(frontendDir)) {
+    const frontendContractsPath = path.join(frontendDir, "contracts.json");
+    fs.writeFileSync(frontendContractsPath, JSON.stringify(frontendConfig, null, 2));
+    console.log(`Frontend contracts.json updated: frontend/config/contracts.json`);
+  }
+
   console.log("\nDeployment Summary:");
   console.log("=".repeat(60));
   console.log(`Network: ${hre.network.name} (Chain ID: ${hre.network.config.chainId})`);
