@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: Smart Contracts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: blockchain
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: blockchain/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contracts
+        run: npx hardhat compile
+
+      - name: Check contract sizes
+        run: npx hardhat compile --force 2>&1 | tee compile-output.txt
+        env:
+          REPORT_SIZE: true
+
+      - name: Run test suite
+        run: npx hardhat test
+        env:
+          REPORT_GAS: true
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Production build
+        run: npm run build
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: blockchain/package-lock.json
+
+      - name: Audit blockchain dependencies
+        run: cd blockchain && npm ci && npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Audit frontend dependencies
+        run: cd frontend && npm ci && npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Install Slither
+        run: pip3 install slither-analyzer
+
+      - name: Install Solidity compiler
+        run: pip3 install solc-select && solc-select install 0.8.19 && solc-select use 0.8.19
+
+      - name: Run Slither static analysis
+        run: |
+          cd blockchain
+          npx hardhat compile
+          slither . --config-file slither.config.json 2>&1 | tee slither-report.txt
+        continue-on-error: true
+
+      - name: Upload Slither report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: slither-report
+          path: blockchain/slither-report.txt
+          retention-days: 30

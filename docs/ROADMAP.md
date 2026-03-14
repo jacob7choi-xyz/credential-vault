@@ -13,6 +13,7 @@ What's built, what's next, and what's on the horizon.
 - 260 tests with 13 security bug fix regressions
 - Next.js 15 frontend with Web3 wallet integration
 - Local development environment with automated deployment
+- CI/CD pipeline with GitHub Actions (contracts, frontend, security audit)
 
 ---
 
@@ -25,9 +26,6 @@ Deploy to Sepolia or Polygon Amoy. Prove the system works beyond localhost. Requ
 
 **Backend API**
 REST API layer for system integration. Enables credential lookup, verification status polling, and webhook notifications without requiring every consumer to interact with the blockchain directly.
-
-**CI/CD pipeline**
-GitHub Actions workflow that runs the test suite on push. Block merges on failure. Simple to set up, prevents regressions.
 
 **Frontend credential management**
 The frontend currently reads on-chain data. Needs write flows: DID creation form, credential display with verification status, verification request approval UI.

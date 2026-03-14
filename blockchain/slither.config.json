@@ -1,0 +1,9 @@
+{
+  "filter_paths": ["node_modules"],
+  "exclude_informational": true,
+  "exclude_low": true,
+  "exclude_optimization": true,
+  "solc_remaps": [
+    "@openzeppelin/=node_modules/@openzeppelin/"
+  ]
+}
