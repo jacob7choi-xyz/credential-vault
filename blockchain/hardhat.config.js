@@ -15,6 +15,11 @@ module.exports = {
       chainId: 1337
     }
   },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS === "true",
+    currency: "USD",
+    noColors: true
+  },
   paths: {
     sources: "./contracts",
     tests: "./test",
