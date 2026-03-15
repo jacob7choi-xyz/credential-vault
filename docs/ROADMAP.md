@@ -10,10 +10,18 @@ World-class B2B provider credentialing platform. Built on blockchain for tamper-
 - DIDRegistry v2: multi-key, key rotation history, reverse lookup, nonces, guardian recovery
 - Consent-gated verification workflow (Request, Approval, Verification)
 - Two-step admin transfer for issuer management
-- 260 tests with 13 security bug fix regressions
+- 260 smart contract tests with 13 security bug fix regressions
 - Next.js 15 frontend with Web3 wallet integration
 - Local development environment with automated deployment
 - CI/CD pipeline with GitHub Actions (contracts, frontend, security audit)
+- **Backend REST API** -- Express.js + TypeScript + ethers.js abstracting blockchain for non-Web3 consumers
+  - JWT auth (HS256, issuer/audience claims, token blacklist with logout)
+  - Role-based access control (admin, issuer_operator, verifier_operator)
+  - Full DID, credential, and verification lifecycle via REST endpoints
+  - SQLite database for users, organizations, providers, audit log
+  - Zod request validation, rate limiting, CORS, helmet
+  - Request correlation IDs, HTTP request logging, pagination
+  - 65 backend tests (55 unit + 10 integration against live Hardhat)
 
 ---
 
@@ -41,19 +49,7 @@ Configure RPC provider (Alchemy or Infura), fund deployer wallet with testnet ET
 
 ---
 
-## Phase 3: Backend API
-
-Non-Web3 consumers (hospitals, HR systems, state boards) need REST endpoints, not MetaMask.
-
-**REST API layer for system integration**
-Credential lookup by provider ID, verification status polling, and webhook notifications when verification completes. This is what makes the platform usable for enterprise clients who will never install a browser wallet.
-
-**Authentication and access control**
-JWT-based auth for API consumers. Rate limiting on all public endpoints. Schema validation on request bodies. CORS policies locked to registered domains.
-
----
-
-## Phase 4: Provider Credentialing Features
+## Phase 3: Provider Credentialing Features
 
 Transform the generic credential system into a purpose-built provider credentialing platform.
 
@@ -74,7 +70,7 @@ Credentials with expiration dates automatically become invalid after expiry. Iss
 
 ---
 
-## Phase 5: Standards and Compliance
+## Phase 4: Standards and Compliance
 
 Interoperability and regulatory alignment for enterprise adoption.
 

@@ -53,6 +53,21 @@ Credential Vault is a blockchain-based identity and credential verification syst
 - All public/external functions have explicit access control
 - 260 tests covering happy paths, access control, edge cases, and 13 security bug fix regressions
 
+### Backend API Security Practices
+
+- JWT authentication with HS256 algorithm pinning, issuer/audience claim verification
+- Token blacklist for logout -- revoked tokens are rejected immediately via SHA-256 hash lookup
+- Fresh database role/org lookup on every request (prevents stale JWT privilege escalation)
+- Zod schema validation on all request bodies
+- Rate limiting on all public endpoints (configurable per-route)
+- Request correlation IDs (UUID-validated) for audit trail
+- HTTP request logging excludes query parameters to prevent sensitive data leakage
+- Contract revert messages mapped to safe HTTP errors (no stack traces exposed)
+- Parameterized SQLite queries throughout (no string concatenation)
+- Strict positive integer validation on all route parameters
+- Organization ownership enforcement on verification queries
+- Pagination with capped limits (max 100) and offsets (max 10000) to prevent resource exhaustion
+
 ### Known Trust Assumptions
 
 These are intentional design decisions, not vulnerabilities:
@@ -62,6 +77,7 @@ These are intentional design decisions, not vulnerabilities:
 3. **On-chain data is public.** Credential metadata stored on-chain is visible to anyone reading the blockchain. Do not store sensitive personal data directly in credential fields. Use hashes or off-chain storage references for sensitive content.
 4. **Gas-based DoS.** An attacker with sufficient ETH could spam DID creation or verification requests. Rate limiting exists at the economic level (gas costs) but not at the contract level.
 5. **Block timestamp dependency.** Guardian recovery time-locks use `block.timestamp`, which miners can manipulate by a few seconds. The 48-hour window makes this negligible in practice.
+6. **Backend holds signing keys.** The backend API signs blockchain transactions on behalf of users. This is a centralized trust point -- compromise of the backend means compromise of all managed wallets. Production deployments must use HSMs or secure key management services. For v1 (local dev), Hardhat pre-funded accounts are used.
 
 ---
 
@@ -97,7 +113,9 @@ A third-party audit is planned before any mainnet deployment. See `docs/ROADMAP.
 ## Development Security Practices
 
 - All contract changes require passing the full 260-test suite before merge
+- Backend changes require passing 65 API tests before merge
 - Integration tests (`FullWorkflow.test.js`) verify the complete three-contract workflow
+- Backend integration tests verify full API-to-chain round trips
 - No secrets, private keys, or credentials are committed to the repository
 - Dependencies are pinned and auditable via lock files
 - Frontend validates all contract return data before rendering
@@ -109,10 +127,11 @@ A third-party audit is planned before any mainnet deployment. See `docs/ROADMAP.
 The following are **in scope** for security reports:
 
 - Smart contract vulnerabilities (reentrancy, access control bypass, state manipulation)
+- Backend API vulnerabilities (authentication bypass, injection, privilege escalation)
 - Frontend vulnerabilities (XSS, injection, wallet interaction bugs)
-- Cryptographic issues (signature validation, nonce handling)
+- Cryptographic issues (signature validation, nonce handling, JWT weaknesses)
 - Logic bugs in the verification consent workflow
-- Privacy leaks through on-chain data exposure
+- Privacy leaks through on-chain data exposure or API response data
 
 The following are **out of scope**:
 

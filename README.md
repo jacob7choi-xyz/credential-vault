@@ -2,7 +2,7 @@
 
 Blockchain-based identity and credential verification platform for healthcare provider credentialing. Primary sources (medical schools, state boards, certification bodies) issue verifiable credentials on-chain, and requesting organizations (hospitals, health systems) verify providers in seconds instead of months.
 
-Built on Ethereum with three coordinated smart contracts: identity management, credential issuance, and consent-gated verification. B2B model -- no PHI or PII stored on-chain.
+Built on Ethereum with three coordinated smart contracts: identity management, credential issuance, and consent-gated verification. REST API backend abstracts blockchain complexity for non-Web3 consumers (hospitals, CVOs, HR systems). B2B model -- no PHI or PII stored on-chain.
 
 ## Architecture
 
@@ -53,6 +53,24 @@ credential_vault_v1/
     slither.config.json        # Slither static analysis config
     hardhat.config.js
     package.json
+  backend/
+    src/
+      index.ts                 # Express app entry point
+      config.ts                # Env config, contract loading
+      db/                      # SQLite database + schema
+      chain/                   # ethers.js provider, contracts, signers
+      middleware/              # Auth, validation, rate limiting, error handling
+      routes/                  # Auth, DID, credential, verification, admin routes
+      services/                # Business logic for each domain
+      types/                   # Shared TypeScript types
+    test/
+      auth.test.ts             # 20 tests
+      did.test.ts              # 8 tests
+      credential.test.ts       # 14 tests
+      verification.test.ts     # 21 tests
+      integration.test.ts      # 10 tests (requires Hardhat node)
+    package.json
+    tsconfig.json
   frontend/
     src/
       app/                     # Next.js 15 App Router
@@ -83,30 +101,40 @@ npx hardhat node
 cd blockchain
 npm run deploy:local
 
-# Terminal 3: Start frontend
+# Terminal 3: Start backend API
+cd backend
+npm install
+npm run dev
+
+# Terminal 4: Start frontend (optional -- for Web3 dashboard)
 cd frontend
 npm install
 npm run dev
 ```
 
-Connect your wallet to `localhost:8545` (Chain ID 1337).
+The backend API runs on `http://localhost:3000/api`. For the frontend, connect your wallet to `localhost:8545` (Chain ID 1337).
 
 ## Running Tests
 
 ```bash
-cd blockchain
-npx hardhat test
-```
+# Smart contract tests (260 tests)
+cd blockchain && npx hardhat test
 
-260 tests covering all three contracts, access control, edge cases, cross-contract interactions, and 13 security bug fix regressions.
+# Backend API tests (65 tests, 10 require Hardhat node)
+cd backend && npm test
+
+# Backend integration tests (requires running Hardhat node + deployed contracts)
+cd backend && TEST_WITH_CHAIN=true npx vitest run test/integration.test.ts
+```
 
 ## CI/CD
 
-GitHub Actions pipeline runs on every push and PR to `main` with three parallel jobs:
+GitHub Actions pipeline runs on every push and PR to `main` with four parallel jobs:
 
 - **Smart Contracts** -- compile, full test suite with gas reporting
+- **Backend API** -- type check, unit test suite (65 tests)
 - **Frontend** -- lint, type check, production build
-- **Security Audit** -- npm audit on both packages, Slither static analysis on Solidity
+- **Security Audit** -- npm audit on all packages, Slither static analysis on Solidity
 
 ## The Credential Flow
 
@@ -150,15 +178,19 @@ See `blockchain/test/FullWorkflow.test.js` for the complete flow in code.
 | Layer | Technology |
 |-------|------------|
 | Smart contracts | Solidity 0.8.19, Hardhat, OpenZeppelin v5.4 |
-| Testing | Mocha, Chai, hardhat-network-helpers |
+| Backend API | Express.js, TypeScript, ethers.js v6 |
+| Database | SQLite (better-sqlite3) |
+| Auth | JWT (HS256) + bcrypt |
+| Validation | Zod |
 | Frontend | Next.js 15, React 19, TypeScript |
 | Web3 | Wagmi v2, viem, RainbowKit |
 | Styling | Tailwind CSS v4 |
+| Testing | Mocha/Chai (contracts), Vitest/Supertest (backend) |
 | CI/CD | GitHub Actions, Slither |
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the five-phase plan: foundation fixes, testnet deployment, backend API, provider credentialing features, and standards/compliance (W3C DID/VC, HIPAA alignment).
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan: foundation fixes, testnet deployment, provider credentialing features, and standards/compliance (W3C DID/VC, HIPAA alignment).
 
 ## Security
 
