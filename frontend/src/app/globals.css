@@ -6,6 +6,7 @@
   --cyber-green: #00ff41;
   --cyber-blue: #0affff;
   --cyber-red: #ff0066;
+  --cyber-amber: #ffb800;
 }
 
 @theme inline {
@@ -89,6 +90,13 @@ body {
               0 0 10px rgba(10, 255, 255, 0.3),
               inset 0 0 20px rgba(10, 255, 255, 0.1);
   border: 1px solid #0affff;
+}
+
+.cyber-glow-amber {
+  box-shadow: 0 0 5px rgba(255, 184, 0, 0.5),
+              0 0 10px rgba(255, 184, 0, 0.3),
+              inset 0 0 20px rgba(255, 184, 0, 0.1);
+  border: 1px solid #ffb800;
 }
 
 .cyber-glow-red {

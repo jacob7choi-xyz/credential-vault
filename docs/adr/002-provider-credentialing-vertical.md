@@ -124,3 +124,30 @@ This means defining a DID method (e.g., `did:vault:` or a more specific method n
 - The DIDRegistry contract interface will need changes. The `didId` parameter format, DID document structure, and key representation must align with the specification.
 - Not all parts of the W3C specifications are relevant on-chain. The contract will implement a subset, with full compliance handled at the application layer.
 - Status is planned, not yet implemented. No timeline committed.
+
+---
+
+## 11. Backend API Layer
+
+### Context
+The current frontend requires MetaMask or another Web3 wallet for all interactions. This is a non-starter for the target market: hospital credentialing staff and CVOs do not use crypto wallets. The Phase 1 CVO strategy (Decision 9) requires a normal web interface where users authenticate with email and password. A backend API is needed to abstract the blockchain away from end users while preserving the on-chain audit trail and verification guarantees.
+
+### Decision
+Implement an Express.js + TypeScript backend that holds signing keys, exposes a REST API, manages user authentication (email/password + JWT), and signs blockchain transactions on behalf of organizations and providers.
+
+Key architectural choices:
+
+- **Custodial key management**: The backend holds private keys for all entities. For local development, these are Hardhat pre-funded accounts. For production, keys will be derived from HD wallets or managed by a KMS.
+- **SQLite for v1**: Zero-config, file-based database for organizations, users, providers, and audit logs. Designed for easy migration to PostgreSQL when scaling requires it.
+- **Contract ABIs read from `blockchain/deployments/`**: Single source of truth, no copying or manual ABI management.
+- **Contract revert-to-HTTP error mapping**: Solidity revert reasons are translated to appropriate HTTP status codes (409, 403, 404, 422) so API consumers get meaningful errors.
+- **Audit logging**: Every API action that touches the blockchain is logged with actor, action, resource, and transaction hash.
+- **Role-based access control**: Admin, issuer_operator, and verifier_operator roles gate access to appropriate endpoints.
+
+### Consequences
+- Enables B2B adoption without requiring crypto onboarding -- hospital staff authenticate with email/password.
+- Introduces a centralized trust point: the backend holds signing keys and becomes a single point of failure. This must be hardened before production use (KMS, HSM, key rotation).
+- The backend signs transactions on behalf of users, meaning users must trust the backend to act honestly. This is an acceptable trade-off for the CVO phase but should be revisited as the system matures toward decentralization.
+- Adds a new component to maintain, test, and deploy. CI pipeline updated with a backend job (type check + tests).
+- SQLite is sufficient for v1 but will need migration to PostgreSQL for concurrent access and production reliability.
+- The REST API enables future integrations: mobile apps, third-party CVO systems, webhook notifications.
