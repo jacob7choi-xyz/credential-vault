@@ -15,6 +15,12 @@ blockchain/typechain-types/
 frontend/.next/
 frontend/out/
 
+# Backend
+backend/data/
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+
 # Build outputs
 dist/
 build/
