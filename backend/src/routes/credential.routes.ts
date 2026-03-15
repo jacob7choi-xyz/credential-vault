@@ -13,6 +13,7 @@ import {
 import { getOrganizationById } from '../db/database';
 import { mapContractError } from '../middleware/errorHandler';
 import { UserRole, ApiResponse } from '../types';
+import { parsePagination } from '../middleware/pagination';
 
 const router = Router();
 
@@ -167,10 +168,13 @@ providerCredentialRouter.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const didId = req.params.didId as string;
-      const credentialIds = await getHolderCredentials(didId);
+      const { limit, offset } = parsePagination(req);
+      const allIds = await getHolderCredentials(didId);
+      const paginated = allIds.slice(offset, offset + limit);
+
       const response: ApiResponse = {
         success: true,
-        data: { didId, credentialIds },
+        data: { didId, credentialIds: paginated, total: allIds.length, limit, offset },
       };
       res.json(response);
     } catch (error) {

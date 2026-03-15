@@ -1,11 +1,14 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { validate } from '../middleware/validate';
 import { authenticate, requireRole } from '../middleware/auth';
 import { authLimiter } from '../middleware/rateLimit';
 import { registerUser, loginUser } from '../services/auth.service';
-import { logAudit } from '../db/database';
+import { logAudit, blacklistToken } from '../db/database';
 import { ActorType, UserRole, ApiResponse } from '../types';
+import jwt from 'jsonwebtoken';
+import { config } from '../config';
 
 const router = Router();
 
@@ -87,6 +90,28 @@ router.post(
       }
       next(error);
     }
+  }
+);
+
+router.post(
+  '/logout',
+  authenticate,
+  (req: Request, res: Response) => {
+    const token = req.headers.authorization!.slice(7);
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Decode to get expiration time for cleanup.
+    // Format must match SQLite's datetime('now') format: 'YYYY-MM-DD HH:MM:SS'
+    const decoded = jwt.decode(token) as { exp?: number };
+    const expiresMs = decoded?.exp ? decoded.exp * 1000 : Date.now() + 86400000;
+    const expiresAt = new Date(expiresMs).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+
+    blacklistToken(tokenHash, expiresAt);
+
+    logAudit(ActorType.USER, req.user!.userId.toString(), 'logout', 'auth', req.user!.email);
+
+    const response: ApiResponse = { success: true, data: { message: 'Logged out' } };
+    res.json(response);
   }
 );
 

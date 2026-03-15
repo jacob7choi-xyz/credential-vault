@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { getUserById } from '../db/database';
+import { getUserById, isTokenBlacklisted } from '../db/database';
 import { JwtPayload, UserRole, ApiResponse } from '../types';
 
 declare global {
@@ -24,11 +25,21 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
   const token = authHeader.slice(7);
 
   try {
+    // Check token blacklist before verifying (fast SHA-256 lookup)
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    if (isTokenBlacklisted(tokenHash)) {
+      const response: ApiResponse = { success: false, error: 'Token has been revoked' };
+      res.status(401).json(response);
+      return;
+    }
+
     const payload = jwt.verify(token, config.jwtSecret, {
       algorithms: ['HS256'],
+      issuer: 'credential-vault',
+      audience: 'credential-vault-api',
     }) as JwtPayload;
 
-    // Verify user still exists and is active in DB
+    // Verify user still exists and is active in DB, and use fresh role/org from DB
     const user = getUserById(payload.userId);
     if (!user || user.is_active !== 1) {
       const response: ApiResponse = { success: false, error: 'Account deactivated or not found' };
@@ -36,7 +47,14 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
       return;
     }
 
-    req.user = payload;
+    // Use current DB values for role and org -- prevents stale JWT from granting
+    // elevated privileges after demotion or org reassignment
+    req.user = {
+      userId: payload.userId,
+      email: user.email,
+      role: user.role as UserRole,
+      organizationId: user.organization_id,
+    };
     next();
   } catch {
     const response: ApiResponse = { success: false, error: 'Invalid or expired token' };
@@ -78,11 +96,19 @@ export function validateAddressParam(paramName: string) {
   };
 }
 
-// Middleware to validate integer ID in route params
+// Middleware to validate integer ID in route params (must be positive integer, no partial strings)
+const POSITIVE_INT_PATTERN = /^\d+$/;
+
 export function validateIntParam(paramName: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const value = parseInt(req.params[paramName] as string, 10);
-    if (isNaN(value) || value < 0) {
+    const raw = req.params[paramName] as string;
+    if (!raw || !POSITIVE_INT_PATTERN.test(raw)) {
+      const response: ApiResponse = { success: false, error: `Invalid ${paramName}` };
+      res.status(400).json(response);
+      return;
+    }
+    const value = parseInt(raw, 10);
+    if (value < 1) {
       const response: ApiResponse = { success: false, error: `Invalid ${paramName}` };
       res.status(400).json(response);
       return;
