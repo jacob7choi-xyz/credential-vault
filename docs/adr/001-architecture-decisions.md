@@ -133,10 +133,12 @@ If the nominated address is wrong or inaccessible, the accept transaction never 
 If CredentialIssuer does not validate that a DID exists before creating a credential, orphan credentials can be produced -- credentials tied to DIDs that were never registered. Orphan credentials waste gas, pollute storage, and create confusion during verification.
 
 ### Decision
-CredentialIssuer holds a reference to DIDRegistry and validates DID existence before allowing issuance. If the DID does not exist, the transaction reverts.
+CredentialIssuer and CredentialVerifier hold a reference to DIDRegistry and validate DID status before allowing operations. Both contracts use `isDIDActive()` (not `didExists()`) to gate their actions. If the DID does not exist or has been deactivated, the transaction reverts.
+
+This distinction is critical: `didExists()` returns true even for deactivated DIDs (the mapping is never cleared), while `isDIDActive()` checks both existence and active status. Using `didExists()` alone allowed credentials to be issued to deactivated identities -- a security bug that was found and fixed.
 
 ### Consequences
-- Prevents orphan credentials, ensuring referential integrity across contracts.
-- Simplifies verification: CredentialVerifier can trust that credentials reference valid DIDs.
+- Prevents orphan credentials and blocks operations against deactivated identities.
+- Simplifies verification: CredentialVerifier can trust that credentials reference valid, active DIDs.
 - Adds ~2,600 gas overhead per issuance for the cross-contract read.
 - Creates a runtime dependency on DIDRegistry availability.
