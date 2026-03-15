@@ -3,9 +3,8 @@ import request from 'supertest';
 import { createApp } from '../src/index';
 import { initializeDatabase, closeDatabase, createUser } from '../src/db/database';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { config } from '../src/config';
 import { UserRole } from '../src/types';
+import { signTestToken } from './helpers';
 
 const HARDHAT_AVAILABLE = process.env.TEST_WITH_CHAIN === 'true';
 
@@ -18,14 +17,11 @@ describe('DID Routes', () => {
     initializeDatabase();
     app = createApp();
 
-    // Create admin user in DB for is_active check
     const passwordHash = bcrypt.hashSync('Admin1234!pass', 12);
     createUser('admin@test.com', passwordHash, UserRole.ADMIN, null);
 
-    adminToken = jwt.sign(
-      { userId: 1, email: 'admin@test.com', role: UserRole.ADMIN, organizationId: null },
-      config.jwtSecret,
-      { expiresIn: '1h' }
+    adminToken = signTestToken(
+      { userId: 1, email: 'admin@test.com', role: UserRole.ADMIN, organizationId: null }
     );
   });
 
@@ -130,13 +126,12 @@ describe('DID Routes', () => {
 
   describe('DELETE /api/dids/:didId', () => {
     it('should require admin role', async () => {
-      const operatorToken = jwt.sign(
-        { userId: 2, email: 'op@test.com', role: UserRole.ISSUER_OPERATOR, organizationId: 1 },
-        config.jwtSecret,
-        { expiresIn: '1h' }
-      );
       const passwordHash = bcrypt.hashSync('Operator1234!', 12);
       createUser('op@test.com', passwordHash, UserRole.ISSUER_OPERATOR, null);
+
+      const operatorToken = signTestToken(
+        { userId: 2, email: 'op@test.com', role: UserRole.ISSUER_OPERATOR, organizationId: 1 }
+      );
 
       const res = await request(app)
         .delete('/api/dids/did:vault:test')

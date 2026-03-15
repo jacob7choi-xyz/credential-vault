@@ -2,10 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/index';
 import { initializeDatabase, closeDatabase, createOrganization, createUser } from '../src/db/database';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { config } from '../src/config';
 import { UserRole, OrgType } from '../src/types';
+import { signTestToken } from './helpers';
 
 describe('Credential Routes', () => {
   let app: ReturnType<typeof createApp>;
@@ -17,25 +16,19 @@ describe('Credential Routes', () => {
     initializeDatabase();
     app = createApp();
 
-    // Create admin user in DB
     const adminHash = bcrypt.hashSync('Admin1234!pass', 12);
     createUser('admin@test.com', adminHash, UserRole.ADMIN, null);
 
-    adminToken = jwt.sign(
-      { userId: 1, email: 'admin@test.com', role: UserRole.ADMIN, organizationId: null },
-      config.jwtSecret,
-      { expiresIn: '1h' }
+    adminToken = signTestToken(
+      { userId: 1, email: 'admin@test.com', role: UserRole.ADMIN, organizationId: null }
     );
 
-    // Create issuer org and user
     const org = createOrganization('Test University', OrgType.ISSUER, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
     const issuerHash = bcrypt.hashSync('Issuer1234!pass', 12);
     createUser('issuer@test.com', issuerHash, UserRole.ISSUER_OPERATOR, org.id);
 
-    issuerToken = jwt.sign(
-      { userId: 2, email: 'issuer@test.com', role: UserRole.ISSUER_OPERATOR, organizationId: org.id },
-      config.jwtSecret,
-      { expiresIn: '1h' }
+    issuerToken = signTestToken(
+      { userId: 2, email: 'issuer@test.com', role: UserRole.ISSUER_OPERATOR, organizationId: org.id }
     );
   });
 
@@ -68,10 +61,9 @@ describe('Credential Routes', () => {
     it('should require issuer or admin role', async () => {
       const verifierHash = bcrypt.hashSync('Verifier1234!', 12);
       createUser('verifier@test.com', verifierHash, UserRole.VERIFIER_OPERATOR, null);
-      const verifierToken = jwt.sign(
-        { userId: 3, email: 'verifier@test.com', role: UserRole.VERIFIER_OPERATOR, organizationId: 1 },
-        config.jwtSecret,
-        { expiresIn: '1h' }
+
+      const verifierToken = signTestToken(
+        { userId: 3, email: 'verifier@test.com', role: UserRole.VERIFIER_OPERATOR, organizationId: 1 }
       );
 
       const res = await request(app)
@@ -101,7 +93,6 @@ describe('Credential Routes', () => {
     });
 
     it('should require organization association', async () => {
-      // Admin without org
       const res = await request(app)
         .post('/api/credentials')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -133,6 +124,14 @@ describe('Credential Routes', () => {
       expect(res.status).toBe(400);
     });
 
+    it('should reject id of zero', async () => {
+      const res = await request(app)
+        .get('/api/credentials/0')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+    });
+
     it('should require authentication', async () => {
       const res = await request(app).get('/api/credentials/1');
       expect(res.status).toBe(401);
@@ -142,7 +141,6 @@ describe('Credential Routes', () => {
   describe('GET /api/credentials/:id/verify', () => {
     it('should be publicly accessible (no auth required)', async () => {
       const res = await request(app).get('/api/credentials/999/verify');
-      // Will get a chain error (not 401), confirming no auth required
       expect(res.status).not.toBe(401);
     });
 
@@ -156,10 +154,9 @@ describe('Credential Routes', () => {
     it('should require issuer or admin role', async () => {
       const verifierHash = bcrypt.hashSync('Verifier1234!', 12);
       const verifierUser = createUser('verifier2@test.com', verifierHash, UserRole.VERIFIER_OPERATOR, null);
-      const verifierToken = jwt.sign(
-        { userId: verifierUser.id, email: 'verifier2@test.com', role: UserRole.VERIFIER_OPERATOR, organizationId: 1 },
-        config.jwtSecret,
-        { expiresIn: '1h' }
+
+      const verifierToken = signTestToken(
+        { userId: verifierUser.id, email: 'verifier2@test.com', role: UserRole.VERIFIER_OPERATOR, organizationId: 1 }
       );
 
       const res = await request(app)
@@ -174,6 +171,15 @@ describe('Credential Routes', () => {
     it('should require authentication', async () => {
       const res = await request(app).get('/api/providers/did:vault:test/credentials');
       expect(res.status).toBe(401);
+    });
+
+    it('should accept pagination query params', async () => {
+      const res = await request(app)
+        .get('/api/providers/did:vault:test/credentials?limit=10&offset=0')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      // Will get chain error or empty result, not a validation error
+      expect(res.status).not.toBe(400);
     });
   });
 });

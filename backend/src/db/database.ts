@@ -147,16 +147,39 @@ export function logAudit(
 export function getAuditLogs(
   resourceType?: string,
   resourceId?: string,
-  limit: number = 50
+  limit: number = 50,
+  offset: number = 0
 ): AuditLogEntry[] {
   if (resourceType && resourceId) {
     return getDb()
       .prepare(
-        'SELECT * FROM audit_log WHERE resource_type = ? AND resource_id = ? ORDER BY timestamp DESC LIMIT ?'
+        'SELECT * FROM audit_log WHERE resource_type = ? AND resource_id = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?'
       )
-      .all(resourceType, resourceId, limit) as AuditLogEntry[];
+      .all(resourceType, resourceId, limit, offset) as AuditLogEntry[];
   }
   return getDb()
-    .prepare('SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ?')
-    .all(limit) as AuditLogEntry[];
+    .prepare('SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ? OFFSET ?')
+    .all(limit, offset) as AuditLogEntry[];
+}
+
+// --- Token blacklist ---
+
+export function blacklistToken(tokenHash: string, expiresAt: string): void {
+  getDb()
+    .prepare('INSERT OR IGNORE INTO token_blacklist (token_hash, expires_at) VALUES (?, ?)')
+    .run(tokenHash, expiresAt);
+}
+
+export function isTokenBlacklisted(tokenHash: string): boolean {
+  const row = getDb()
+    .prepare('SELECT 1 FROM token_blacklist WHERE token_hash = ?')
+    .get(tokenHash);
+  return !!row;
+}
+
+export function cleanExpiredTokens(): number {
+  const result = getDb()
+    .prepare("DELETE FROM token_blacklist WHERE expires_at < datetime('now')")
+    .run();
+  return result.changes;
 }

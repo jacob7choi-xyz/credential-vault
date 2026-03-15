@@ -46,6 +46,8 @@ export async function loginUser(
 
   const token = jwt.sign(payload, config.jwtSecret, {
     expiresIn: config.jwtExpiresIn as string,
+    issuer: 'credential-vault',
+    audience: 'credential-vault-api',
   } as jwt.SignOptions);
 
   return {

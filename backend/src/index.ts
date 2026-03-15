@@ -3,11 +3,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { config, validateConfig, getSafeRpcUrl } from './config';
 import { logger } from './logger';
-import { initializeDatabase, closeDatabase } from './db/database';
+import { initializeDatabase, closeDatabase, cleanExpiredTokens } from './db/database';
 import { getBlockNumber, checkConnection } from './chain/provider';
-import { getContractAddresses } from './chain/contracts';
 import { generalLimiter } from './middleware/rateLimit';
 import { errorHandler } from './middleware/errorHandler';
+import { requestId } from './middleware/requestId';
+import { httpLogger } from './middleware/httpLogger';
 import authRoutes from './routes/auth.routes';
 import didRoutes from './routes/did.routes';
 import credentialRoutes, { providerCredentialRouter } from './routes/credential.routes';
@@ -16,6 +17,10 @@ import adminRoutes from './routes/admin.routes';
 
 export function createApp() {
   const app = express();
+
+  // Request tracking
+  app.use(requestId);
+  app.use(httpLogger);
 
   // Security middleware
   app.use(helmet());
@@ -84,6 +89,15 @@ async function main() {
   }
 
   const app = createApp();
+
+  // Clean expired blacklisted tokens every hour
+  const tokenCleanupInterval = setInterval(() => {
+    const removed = cleanExpiredTokens();
+    if (removed > 0) {
+      logger.info(`Cleaned ${removed} expired blacklisted tokens`);
+    }
+  }, 60 * 60 * 1000);
+  tokenCleanupInterval.unref();
 
   const server = app.listen(config.port, () => {
     logger.info(`Backend API running on port ${config.port} (${config.nodeEnv})`);
