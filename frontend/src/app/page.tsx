@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Shield, Award, Plus, Check, Lock, Terminal } from 'lucide-react'
+import { Shield, Award, Check, Lock, Terminal, Search } from 'lucide-react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useAccount } from 'wagmi'
 import toast from 'react-hot-toast'
@@ -14,7 +14,17 @@ import {
   useIssueCredential,
   useRegisterIssuer,
   useIsAuthorizedIssuer,
+  useRequestVerification,
+  useApproveVerification,
+  useExecuteVerification,
+  useGetEmployerRequests,
+  useGetCandidateRequests,
+  useGetVerificationRequest,
+  useGetVerificationResults,
+  useQuickVerify,
 } from '../hooks/useContracts'
+
+type VerifyTab = 'employer' | 'candidate' | 'quick'
 
 export default function Dashboard() {
   const { address, isConnected } = useAccount()
@@ -37,6 +47,18 @@ export default function Dashboard() {
     expirationDate: '0'
   })
 
+  // Verification state
+  const [verifyTab, setVerifyTab] = useState<VerifyTab>('employer')
+  const [showRequestForm, setShowRequestForm] = useState(false)
+  const [requestForm, setRequestForm] = useState({
+    requestId: '',
+    candidateDID: '',
+    credentialIds: '',
+    validForHours: '24'
+  })
+  const [quickVerifyId, setQuickVerifyId] = useState('')
+  const [activeQuickVerifyId, setActiveQuickVerifyId] = useState('')
+
   // Generate DID based on full wallet address
   useEffect(() => {
     if (address) {
@@ -54,11 +76,20 @@ export default function Dashboard() {
   const { registerIssuer, isPending: isRegisteringIssuer } = useRegisterIssuer()
   const { isAuthorized } = useIsAuthorizedIssuer(address)
 
+  // Verification hooks
+  const { requestVerification, isPending: isRequestingVerification } = useRequestVerification()
+  const { approveVerification, isPending: isApprovingVerification } = useApproveVerification()
+  const { executeVerification, isPending: isExecutingVerification } = useExecuteVerification()
+  const { requestIds: employerRequestIds, isLoading: isLoadingEmployerRequests, refetch: refetchEmployerRequests } = useGetEmployerRequests(address)
+  const { requestIds: candidateRequestIds, isLoading: isLoadingCandidateRequests, refetch: refetchCandidateRequests } = useGetCandidateRequests(hasDID ? didId : undefined)
+  const { isValid: qvIsValid, issuerName: qvIssuerName, credentialType: qvCredentialType, holderDID: qvHolderDID, isLoading: isQuickVerifying } = useQuickVerify(activeQuickVerifyId || undefined)
+
   // Close modal on ESC key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       setShowCreateDID(false)
       setShowIssueCredential(false)
+      setShowRequestForm(false)
     }
   }, [])
 
@@ -149,6 +180,83 @@ export default function Dashboard() {
     }
   }
 
+  // Handle verification request
+  const handleRequestVerification = async () => {
+    const trimmedId = requestForm.requestId.trim()
+    const trimmedDID = requestForm.candidateDID.trim()
+    const trimmedCredIds = requestForm.credentialIds.trim()
+
+    if (!trimmedId || trimmedId.length > 100) {
+      toast.error('Request ID required (max 100 chars)')
+      return
+    }
+    if (!trimmedDID) {
+      toast.error('Candidate DID required')
+      return
+    }
+    if (!trimmedCredIds) {
+      toast.error('At least one credential ID required')
+      return
+    }
+
+    const credIds = trimmedCredIds.split(',').map(s => s.trim()).filter(s => s.length > 0)
+    if (credIds.length === 0 || credIds.length > 50) {
+      toast.error('Provide 1-50 credential IDs')
+      return
+    }
+
+    const hours = Number(requestForm.validForHours)
+    if (isNaN(hours) || !Number.isInteger(hours) || hours < 1 || hours > 8760) {
+      toast.error('Valid hours must be 1-8760')
+      return
+    }
+
+    try {
+      await requestVerification(trimmedId, trimmedDID, credIds, BigInt(hours))
+      toast.success('Verification request submitted')
+      setShowRequestForm(false)
+      setRequestForm({ requestId: '', candidateDID: '', credentialIds: '', validForHours: '24' })
+      setTimeout(() => refetchEmployerRequests(), 2000)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Request failed'
+      toast.error(message.length > 100 ? 'Verification request failed' : message)
+    }
+  }
+
+  // Handle approve verification
+  const handleApprove = async (requestId: string) => {
+    try {
+      await approveVerification(requestId)
+      toast.success('Verification approved')
+      setTimeout(() => refetchCandidateRequests(), 2000)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Approval failed'
+      toast.error(message.length > 100 ? 'Approval failed' : message)
+    }
+  }
+
+  // Handle execute verification
+  const handleExecute = async (requestId: string) => {
+    try {
+      await executeVerification(requestId)
+      toast.success('Verification executed')
+      setTimeout(() => refetchEmployerRequests(), 2000)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Execution failed'
+      toast.error(message.length > 100 ? 'Verification execution failed' : message)
+    }
+  }
+
+  // Handle quick verify
+  const handleQuickVerify = () => {
+    const trimmed = quickVerifyId.trim()
+    if (!trimmed) {
+      toast.error('Credential ID required')
+      return
+    }
+    setActiveQuickVerifyId(trimmed)
+  }
+
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-black grid-bg scanline flex items-center justify-center">
@@ -203,7 +311,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="cyber-glow bg-black bg-opacity-80 p-6">
             <div className="flex items-center justify-between">
               <div className="font-mono">
@@ -225,6 +333,18 @@ export default function Dashboard() {
                 </div>
               </div>
               <Award className="w-8 h-8 text-cyan-400" aria-hidden="true" />
+            </div>
+          </div>
+
+          <div className="cyber-glow-amber bg-black bg-opacity-80 p-6">
+            <div className="flex items-center justify-between">
+              <div className="font-mono">
+                <div className="text-xs text-amber-400 opacity-70 mb-1">[VERIFICATIONS]</div>
+                <div className="text-xl text-amber-400 font-bold">
+                  {isLoadingEmployerRequests ? '... LOADING' : `${employerRequestIds?.length || 0} REQUESTS`}
+                </div>
+              </div>
+              <Search className="w-8 h-8 text-amber-400" aria-hidden="true" />
             </div>
           </div>
 
@@ -370,7 +490,7 @@ export default function Dashboard() {
         )}
 
         {/* Credentials List */}
-        <div className="cyber-glow bg-black bg-opacity-80 p-6 font-mono">
+        <div className="cyber-glow bg-black bg-opacity-80 p-6 mb-8 font-mono">
           <div className="text-green-400 text-sm mb-4 opacity-70">[VERIFIED_CREDENTIALS]</div>
 
           {!hasDID ? (
@@ -385,6 +505,192 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="text-green-400 opacity-50 text-xs">&gt; No credentials found in registry</div>
+          )}
+        </div>
+
+        {/* Verification System */}
+        <div className="cyber-glow-amber bg-black bg-opacity-80 p-6 mb-8 font-mono">
+          <div className="text-amber-400 text-sm mb-4 opacity-70">[VERIFICATION_SYSTEM]</div>
+
+          {/* Tab Bar */}
+          <div className="flex gap-2 mb-6">
+            {(['employer', 'candidate', 'quick'] as VerifyTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setVerifyTab(tab)}
+                className={`px-4 py-2 text-xs font-bold transition-all ${
+                  verifyTab === tab
+                    ? 'bg-amber-900 bg-opacity-30 text-amber-400 border border-amber-400'
+                    : 'bg-black text-amber-400 opacity-50 border border-amber-400 border-opacity-30 hover:opacity-80'
+                }`}
+              >
+                [{tab.toUpperCase()}]
+              </button>
+            ))}
+          </div>
+
+          {/* Employer Tab */}
+          {verifyTab === 'employer' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-amber-400 text-xs opacity-50">
+                  Submit verification requests for candidate credentials
+                </div>
+                <button
+                  onClick={() => setShowRequestForm(!showRequestForm)}
+                  className="cyber-glow-amber bg-black text-amber-400 px-4 py-2 text-xs hover:bg-amber-900 hover:bg-opacity-20"
+                >
+                  [+] NEW_REQUEST
+                </button>
+              </div>
+
+              {showRequestForm && (
+                <div className="border-t border-amber-400 border-opacity-30 pt-4 mb-4 space-y-3">
+                  <input
+                    aria-label="Request ID"
+                    placeholder="REQUEST_ID"
+                    maxLength={100}
+                    className="w-full bg-black border border-amber-400 text-amber-400 px-3 py-2 text-sm focus:outline-none focus:border-amber-300"
+                    value={requestForm.requestId}
+                    onChange={(e) => setRequestForm({ ...requestForm, requestId: e.target.value })}
+                  />
+                  <input
+                    aria-label="Candidate DID"
+                    placeholder="CANDIDATE_DID"
+                    className="w-full bg-black border border-amber-400 text-amber-400 px-3 py-2 text-sm focus:outline-none focus:border-amber-300"
+                    value={requestForm.candidateDID}
+                    onChange={(e) => setRequestForm({ ...requestForm, candidateDID: e.target.value })}
+                  />
+                  <textarea
+                    aria-label="Credential IDs"
+                    placeholder="CREDENTIAL_IDS (comma-separated)"
+                    className="w-full bg-black border border-amber-400 text-amber-400 px-3 py-2 text-sm h-20 focus:outline-none focus:border-amber-300"
+                    value={requestForm.credentialIds}
+                    onChange={(e) => setRequestForm({ ...requestForm, credentialIds: e.target.value })}
+                  />
+                  <input
+                    aria-label="Valid For Hours"
+                    placeholder="VALID_HOURS (1-8760, default 24)"
+                    type="number"
+                    min="1"
+                    max="8760"
+                    step="1"
+                    className="w-full bg-black border border-amber-400 text-amber-400 px-3 py-2 text-sm focus:outline-none focus:border-amber-300"
+                    value={requestForm.validForHours}
+                    onChange={(e) => setRequestForm({ ...requestForm, validForHours: e.target.value })}
+                  />
+                  <button
+                    onClick={handleRequestVerification}
+                    disabled={isRequestingVerification}
+                    className="w-full cyber-glow-amber bg-black text-amber-400 px-4 py-2 text-sm hover:bg-amber-900 hover:bg-opacity-20 disabled:opacity-30"
+                  >
+                    {isRequestingVerification ? '[...SUBMITTING]' : '[EXECUTE] SUBMIT_REQUEST'}
+                  </button>
+                </div>
+              )}
+
+              {isLoadingEmployerRequests ? (
+                <div className="text-amber-400 opacity-50 text-xs">&gt; Loading requests...</div>
+              ) : employerRequestIds && employerRequestIds.length > 0 ? (
+                <div className="space-y-3">
+                  {employerRequestIds.map((reqId) => (
+                    <VerificationRequestCard
+                      key={reqId}
+                      requestId={reqId}
+                      perspective="employer"
+                      onExecute={handleExecute}
+                      isExecuting={isExecutingVerification}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-amber-400 opacity-50 text-xs">&gt; No verification requests submitted</div>
+              )}
+            </div>
+          )}
+
+          {/* Candidate Tab */}
+          {verifyTab === 'candidate' && (
+            <div>
+              {!hasDID ? (
+                <div className="text-amber-400 opacity-50 text-xs">&gt; Initialize DID to view incoming verification requests</div>
+              ) : isLoadingCandidateRequests ? (
+                <div className="text-amber-400 opacity-50 text-xs">&gt; Loading requests...</div>
+              ) : candidateRequestIds && candidateRequestIds.length > 0 ? (
+                <div className="space-y-3">
+                  {candidateRequestIds.map((reqId) => (
+                    <VerificationRequestCard
+                      key={reqId}
+                      requestId={reqId}
+                      perspective="candidate"
+                      onApprove={handleApprove}
+                      isApproving={isApprovingVerification}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-amber-400 opacity-50 text-xs">&gt; No incoming verification requests</div>
+              )}
+            </div>
+          )}
+
+          {/* Quick Verify Tab */}
+          {verifyTab === 'quick' && (
+            <div>
+              <div className="text-amber-400 text-xs opacity-50 mb-4">
+                Instantly verify a credential by ID (public read, no approval required)
+              </div>
+              <div className="flex gap-2 mb-4">
+                <input
+                  aria-label="Credential ID to verify"
+                  placeholder="CREDENTIAL_ID"
+                  className="flex-1 bg-black border border-amber-400 text-amber-400 px-3 py-2 text-sm focus:outline-none focus:border-amber-300"
+                  value={quickVerifyId}
+                  onChange={(e) => setQuickVerifyId(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleQuickVerify() }}
+                />
+                <button
+                  onClick={handleQuickVerify}
+                  className="cyber-glow-amber bg-black text-amber-400 px-6 py-2 text-sm hover:bg-amber-900 hover:bg-opacity-20"
+                >
+                  [VERIFY]
+                </button>
+              </div>
+
+              {activeQuickVerifyId && (
+                <div className="border-t border-amber-400 border-opacity-30 pt-4">
+                  {isQuickVerifying ? (
+                    <div className="text-amber-400 opacity-50 text-xs">&gt; Verifying credential...</div>
+                  ) : (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 text-xs font-bold ${
+                          qvIsValid
+                            ? 'bg-green-900 bg-opacity-30 text-green-400 border border-green-400'
+                            : 'bg-red-900 bg-opacity-30 text-red-400 border border-red-400'
+                        }`}>
+                          {qvIsValid ? 'VALID' : 'INVALID'}
+                        </span>
+                        <span className="text-amber-400 opacity-70">{activeQuickVerifyId}</span>
+                      </div>
+                      {qvIsValid && (
+                        <div className="ml-1 space-y-1">
+                          <div className="text-amber-400 text-xs">
+                            <span className="opacity-50">&gt; ISSUER:</span> {qvIssuerName}
+                          </div>
+                          <div className="text-amber-400 text-xs">
+                            <span className="opacity-50">&gt; TYPE:</span> {qvCredentialType}
+                          </div>
+                          <div className="text-amber-400 text-xs">
+                            <span className="opacity-50">&gt; HOLDER:</span> {qvHolderDID}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -480,6 +786,164 @@ function CredentialCard({ credentialId }: { credentialId: string }) {
           </span>
         </div>
       </div>
+    </div>
+  )
+}
+
+function VerificationRequestCard({
+  requestId,
+  perspective,
+  onApprove,
+  onExecute,
+  isApproving,
+  isExecuting,
+}: {
+  requestId: string
+  perspective: 'employer' | 'candidate'
+  onApprove?: (id: string) => Promise<void>
+  onExecute?: (id: string) => Promise<void>
+  isApproving?: boolean
+  isExecuting?: boolean
+}) {
+  const { request, isLoading } = useGetVerificationRequest(requestId)
+  const [showResults, setShowResults] = useState(false)
+
+  if (isLoading) {
+    return (
+      <div className="bg-black bg-opacity-60 border border-amber-400 border-opacity-30 p-4 animate-pulse">
+        <div className="text-amber-400 opacity-50 text-xs">&gt; Loading request...</div>
+      </div>
+    )
+  }
+
+  if (!request || !request.requestId) return null
+
+  const now = BigInt(Math.floor(Date.now() / 1000))
+  const isExpired = request.expirationDate > BigInt(0) && now > request.expirationDate
+
+  let status: 'pending' | 'approved' | 'completed' | 'expired'
+  if (request.isCompleted) {
+    status = 'completed'
+  } else if (isExpired) {
+    status = 'expired'
+  } else if (request.isApproved) {
+    status = 'approved'
+  } else {
+    status = 'pending'
+  }
+
+  const statusColors = {
+    pending: 'bg-amber-900 bg-opacity-30 text-amber-400 border border-amber-400',
+    approved: 'bg-green-900 bg-opacity-30 text-green-400 border border-green-400',
+    completed: 'bg-cyan-900 bg-opacity-30 text-cyan-400 border border-cyan-400',
+    expired: 'bg-red-900 bg-opacity-30 text-red-400 border border-red-400',
+  }
+
+  const statusLabels = {
+    pending: 'PENDING',
+    approved: 'APPROVED',
+    completed: 'COMPLETED',
+    expired: 'EXPIRED',
+  }
+
+  return (
+    <div className="bg-black bg-opacity-60 border border-amber-400 border-opacity-30 p-4">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1">
+          <div className="text-amber-400 text-sm font-bold">{requestId}</div>
+          <div className="text-amber-400 text-xs opacity-50 mt-1">
+            &gt; {perspective === 'employer' ? 'CANDIDATE' : 'EMPLOYER'}: {
+              perspective === 'employer'
+                ? request.candidateDID
+                : request.employer
+            }
+          </div>
+        </div>
+        <span className={`px-3 py-1 text-xs font-bold ${statusColors[status]}`}>
+          {statusLabels[status]}
+        </span>
+      </div>
+
+      {/* Action buttons */}
+      <div className="mt-3">
+        {perspective === 'candidate' && status === 'pending' && onApprove && (
+          <button
+            onClick={() => onApprove(requestId)}
+            disabled={isApproving}
+            className="cyber-glow bg-black text-green-400 px-4 py-2 text-xs hover:bg-green-900 hover:bg-opacity-20 disabled:opacity-30"
+          >
+            {isApproving ? '[...APPROVING]' : '[APPROVE] GRANT_ACCESS'}
+          </button>
+        )}
+
+        {perspective === 'candidate' && status === 'approved' && (
+          <div className="text-amber-400 text-xs opacity-50">&gt; Awaiting employer execution</div>
+        )}
+
+        {perspective === 'employer' && status === 'approved' && onExecute && (
+          <button
+            onClick={() => onExecute(requestId)}
+            disabled={isExecuting}
+            className="cyber-glow-amber bg-black text-amber-400 px-4 py-2 text-xs hover:bg-amber-900 hover:bg-opacity-20 disabled:opacity-30"
+          >
+            {isExecuting ? '[...EXECUTING]' : '[EXECUTE] RUN_VERIFICATION'}
+          </button>
+        )}
+
+        {status === 'completed' && (
+          <button
+            onClick={() => setShowResults(!showResults)}
+            className="text-cyan-400 text-xs opacity-70 hover:opacity-100"
+          >
+            {showResults ? '[-] HIDE_RESULTS' : '[+] VIEW_RESULTS'}
+          </button>
+        )}
+      </div>
+
+      {showResults && status === 'completed' && (
+        <VerificationResultsPanel requestId={requestId} />
+      )}
+    </div>
+  )
+}
+
+function VerificationResultsPanel({ requestId }: { requestId: string }) {
+  const { results, isLoading } = useGetVerificationResults(requestId, true)
+
+  if (isLoading) {
+    return (
+      <div className="mt-3 border-t border-cyan-400 border-opacity-30 pt-3">
+        <div className="text-cyan-400 opacity-50 text-xs">&gt; Loading results...</div>
+      </div>
+    )
+  }
+
+  if (!results || results.length === 0) {
+    return (
+      <div className="mt-3 border-t border-cyan-400 border-opacity-30 pt-3">
+        <div className="text-cyan-400 opacity-50 text-xs">&gt; No results available</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 border-t border-cyan-400 border-opacity-30 pt-3 space-y-2">
+      {results.map((result, idx) => (
+        <div key={idx} className="flex items-center gap-3 text-xs">
+          <span className={`px-2 py-0.5 font-bold ${
+            result.isValid
+              ? 'bg-green-900 bg-opacity-30 text-green-400 border border-green-400'
+              : 'bg-red-900 bg-opacity-30 text-red-400 border border-red-400'
+          }`}>
+            {result.isValid ? 'VALID' : 'INVALID'}
+          </span>
+          <span className="text-cyan-400 opacity-70">{result.credentialId}</span>
+          <span className="text-cyan-400 opacity-50">({result.credentialType})</span>
+          {result.issuerName && (
+            <span className="text-cyan-400 opacity-40">by {result.issuerName}</span>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

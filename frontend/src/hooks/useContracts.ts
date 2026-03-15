@@ -1,4 +1,4 @@
-import { useReadContract, useWriteContract, useAccount } from 'wagmi'
+import { useReadContract, useWriteContract } from 'wagmi'
 import contractsConfig from '../../config/contracts.json'
 
 // Type definitions matching contract structs
@@ -170,6 +170,160 @@ export function useIsAuthorizedIssuer(address?: `0x${string}`) {
   })
 
   return { isAuthorized: data as boolean | undefined }
+}
+
+// --- Verification Workflow Hooks ---
+
+interface VerificationRequest {
+  requestId: string
+  employer: string
+  candidateDID: string
+  requestDate: bigint
+  expirationDate: bigint
+  isApproved: boolean
+  isCompleted: boolean
+}
+
+interface VerificationResult {
+  credentialId: string
+  isValid: boolean
+  isAuthentic: boolean
+  issuerName: string
+  credentialType: string
+  verificationDate: bigint
+}
+
+// Hook to request verification (employer)
+export function useRequestVerification() {
+  const { writeContractAsync, isPending, isSuccess, error, data: hash } = useWriteContract()
+
+  const requestVerification = async (
+    requestId: string,
+    candidateDID: string,
+    requestedCredentials: string[],
+    validForHours: bigint
+  ) => {
+    return writeContractAsync({
+      ...contracts.CredentialVerifier,
+      functionName: 'requestVerification',
+      args: [requestId, candidateDID, requestedCredentials, validForHours],
+    })
+  }
+
+  return { requestVerification, isPending, isSuccess, error, hash }
+}
+
+// Hook to approve verification (candidate/DID controller)
+export function useApproveVerification() {
+  const { writeContractAsync, isPending, isSuccess, error, data: hash } = useWriteContract()
+
+  const approveVerification = async (requestId: string) => {
+    return writeContractAsync({
+      ...contracts.CredentialVerifier,
+      functionName: 'approveVerification',
+      args: [requestId],
+    })
+  }
+
+  return { approveVerification, isPending, isSuccess, error, hash }
+}
+
+// Hook to execute verification (employer)
+export function useExecuteVerification() {
+  const { writeContractAsync, isPending, isSuccess, error, data: hash } = useWriteContract()
+
+  const executeVerification = async (requestId: string) => {
+    return writeContractAsync({
+      ...contracts.CredentialVerifier,
+      functionName: 'executeVerification',
+      args: [requestId],
+    })
+  }
+
+  return { executeVerification, isPending, isSuccess, error, hash }
+}
+
+// Hook to get employer's verification request IDs
+export function useGetEmployerRequests(employer?: string) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    ...contracts.CredentialVerifier,
+    functionName: 'getEmployerRequests',
+    args: employer ? [employer] : undefined,
+    query: {
+      enabled: !!employer,
+    },
+  })
+
+  return {
+    requestIds: data as string[] | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+// Hook to get candidate's verification request IDs
+export function useGetCandidateRequests(candidateDID?: string) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    ...contracts.CredentialVerifier,
+    functionName: 'getCandidateRequests',
+    args: candidateDID ? [candidateDID] : undefined,
+    query: {
+      enabled: !!candidateDID,
+    },
+  })
+
+  return {
+    requestIds: data as string[] | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+// Hook to get a single verification request (auto-getter from public mapping)
+export function useGetVerificationRequest(requestId?: string) {
+  const { data, isLoading, error } = useReadContract({
+    ...contracts.CredentialVerifier,
+    functionName: 'verificationRequests',
+    args: requestId ? [requestId] : undefined,
+    query: {
+      enabled: !!requestId,
+    },
+  })
+
+  // Solidity auto-getter omits dynamic arrays, returns 7-field tuple
+  const result = data as [string, string, string, bigint, bigint, boolean, boolean] | undefined
+
+  const request: VerificationRequest | undefined = result ? {
+    requestId: result[0],
+    employer: result[1],
+    candidateDID: result[2],
+    requestDate: result[3],
+    expirationDate: result[4],
+    isApproved: result[5],
+    isCompleted: result[6],
+  } : undefined
+
+  return { request, isLoading, error }
+}
+
+// Hook to get verification results for a completed request
+export function useGetVerificationResults(requestId?: string, isCompleted?: boolean) {
+  const { data, isLoading, error } = useReadContract({
+    ...contracts.CredentialVerifier,
+    functionName: 'getVerificationResults',
+    args: requestId ? [requestId] : undefined,
+    query: {
+      enabled: !!requestId && !!isCompleted,
+    },
+  })
+
+  return {
+    results: data as VerificationResult[] | undefined,
+    isLoading,
+    error,
+  }
 }
 
 // Hook to quick verify credential
