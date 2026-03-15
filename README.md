@@ -1,8 +1,8 @@
 # Credential Vault
 
-Blockchain-powered credential verification system. Institutions issue tamper-proof credentials on-chain, employers verify them in seconds.
+Blockchain-based identity and credential verification platform for healthcare provider credentialing. Primary sources (medical schools, state boards, certification bodies) issue verifiable credentials on-chain, and requesting organizations (hospitals, health systems) verify providers in seconds instead of months.
 
-Built on Ethereum with three coordinated smart contracts: identity management, credential issuance, and consent-gated verification.
+Built on Ethereum with three coordinated smart contracts: identity management, credential issuance, and consent-gated verification. B2B model -- no PHI or PII stored on-chain.
 
 ## Architecture
 
@@ -10,7 +10,7 @@ Built on Ethereum with three coordinated smart contracts: identity management, c
 DIDRegistry (identity layer)
     ^                ^
     |                |
-CredentialIssuer     CredentialVerifier
+ CredentialIssuer     CredentialVerifier
 (issuance layer)     (verification layer)
                          |
                          v
@@ -32,6 +32,7 @@ The identity layer is hardened for production use:
 - **Reverse lookup** -- One address controls exactly one active DID. Prevents identity fragmentation, enables address-based resolution.
 - **Nonce-based replay protection** -- On-chain nonce per DID for off-chain signature validation.
 - **Recovery guardians** -- 2-5 trusted addresses with configurable threshold. 48-hour time-lock on recovery execution. Controller can cancel during the window. Guardians are removed from the set if they become the new controller.
+- **Deactivated DID blocking** -- `isDIDActive()` gates credential issuance and verification. Dead identities cannot be used.
 
 ## Project Structure
 
@@ -49,6 +50,7 @@ credential_vault_v1/
       FullWorkflow.test.js     # 5 integration tests
     scripts/
       deploy.js                # Deployment + artifact generation
+    slither.config.json        # Slither static analysis config
     hardhat.config.js
     package.json
   frontend/
@@ -59,7 +61,12 @@ credential_vault_v1/
       wagmi.ts                 # Web3 chain/wallet config
       contracts.json           # Auto-generated contract addresses + ABIs
   docs/
-    adr/001-architecture-decisions.md
+    adr/
+      001-architecture-decisions.md
+      002-provider-credentialing-vertical.md
+    ROADMAP.md
+  .github/workflows/ci.yml    # CI/CD pipeline
+  SECURITY.md                  # Security policy and disclosure
   LICENSE
   README.md
 ```
@@ -91,16 +98,24 @@ cd blockchain
 npx hardhat test
 ```
 
-260 tests covering all three contracts, access control, edge cases, cross-contract interactions, and security bug fix regressions.
+260 tests covering all three contracts, access control, edge cases, cross-contract interactions, and 13 security bug fix regressions.
+
+## CI/CD
+
+GitHub Actions pipeline runs on every push and PR to `main` with three parallel jobs:
+
+- **Smart Contracts** -- compile, full test suite with gas reporting
+- **Frontend** -- lint, type check, production build
+- **Security Audit** -- npm audit on both packages, Slither static analysis on Solidity
 
 ## The Credential Flow
 
-1. Student creates a DID via DIDRegistry
-2. Admin registers university as an authorized issuer
-3. University issues a credential to the student's DID
-4. Employer requests verification, specifying the credential IDs
-5. Student approves the request on-chain (consent gate)
-6. Employer executes verification (cross-references all contracts)
+1. Provider (doctor) creates a DID via DIDRegistry
+2. Admin registers a primary source (medical school, state board) as an authorized issuer
+3. Primary source issues a credential to the provider's DID (degree, license, board cert)
+4. Requesting organization (hospital) requests verification, specifying the credential IDs
+5. Provider approves the request on-chain (consent gate)
+6. Organization executes verification (cross-references all contracts)
 7. Results stored on-chain with full audit trail
 
 See `blockchain/test/FullWorkflow.test.js` for the complete flow in code.
@@ -116,6 +131,8 @@ See `blockchain/test/FullWorkflow.test.js` for the complete flow in code.
 | Verification consent | Three-step workflow requires explicit holder approval |
 | Key compromise recovery | Guardian threshold with 48-hour time-lock |
 | Replay protection | On-chain nonce per DID for off-chain signatures |
+| Deactivated DID blocking | `isDIDActive()` gates issuance and verification |
+| No PHI/PII on-chain | Sensitive data stored off-chain; only hashes and identifiers on-chain |
 
 ## Gas Costs
 
@@ -137,10 +154,15 @@ See `blockchain/test/FullWorkflow.test.js` for the complete flow in code.
 | Frontend | Next.js 15, React 19, TypeScript |
 | Web3 | Wagmi v2, viem, RainbowKit |
 | Styling | Tailwind CSS v4 |
+| CI/CD | GitHub Actions, Slither |
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for what's next -- testnet deployment, backend API, QR verification, and longer-term features like ZK proofs and mobile.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the five-phase plan: foundation fixes, testnet deployment, backend API, provider credentialing features, and standards/compliance (W3C DID/VC, HIPAA alignment).
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the security policy, responsible disclosure process, and bug history.
 
 ## License
 
